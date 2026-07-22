@@ -217,3 +217,17 @@ export interface ChurchSettings {
   googleSheetUrl?: string;
   customMenus?: Array<{ id: string; label: string; visible: boolean }>;
 }
+
+export interface ServiceSchedule {
+  id: string;
+  sessionName: string;
+  title: string;
+  time: string;
+  speaker: string;
+  worshipLeader: string;
+  location: string;
+  category?: string;
+  dateDay?: string;
+  notes?: string;
+  isOnline?: boolean;
+}

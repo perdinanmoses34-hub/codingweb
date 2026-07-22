@@ -55,6 +55,7 @@ import {
   Role,
   User as UserType,
   Notification as ChurchNotificationType,
+  ServiceSchedule,
 } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -141,6 +142,7 @@ export default function DashboardJemaat({
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [congregations, setCongregations] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<ServiceSchedule[]>([]);
   const [notifications, setNotifications] = useState<ChurchNotificationType[]>([]);
   const [activePopupNotif, setActivePopupNotif] = useState<ChurchNotificationType | null>(null);
   const [showNotifModal, setShowNotifModal] = useState(false);
@@ -338,6 +340,7 @@ export default function DashboardJemaat({
     setPrayers(MockDatabase.getPrayerRequests());
     setRegistrations(MockDatabase.getEventRegistrations());
     setCongregations(MockDatabase.getCongregations());
+    setSchedules(MockDatabase.getSchedules());
 
     const allNotifs = MockDatabase.getNotifications();
     const jemaatNotifs = allNotifs.filter(
@@ -1033,86 +1036,61 @@ export default function DashboardJemaat({
               <p className="text-xs text-gray-400">Jadwal Ibadah Raya Mingguan dan Kegiatan Persekutuan</p>
             </div>
 
-            {/* Custom Interactive Schedule table/grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Card Ibadah 1 */}
-              <div className="p-5 bg-teal-50/20 border border-teal-100/50 rounded-2xl space-y-3 hover:border-brand transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 bg-brand text-white text-[9px] font-bold rounded-full uppercase">Sesi I (Pagi)</span>
-                  <Clock className="w-4 h-4 text-brand" />
-                </div>
-                <h3 className="font-display font-bold text-gray-800 text-base">Ibadah Raya 1</h3>
-                <p className="text-2xl font-bold font-mono text-brand">07.00 <span className="text-xs text-gray-400">WIB</span></p>
-                <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-teal-500/15">
-                  <p><strong>Pembicara:</strong> Pdt. Dr. Samuel Wijaya</p>
-                  <p><strong>Petugas WL:</strong> Sdr. David Haryono</p>
-                  <p><strong>Lokasi:</strong> Main Sanctuary (Lt. 1)</p>
-                </div>
-                <button
-                  onClick={() => toggleReminder('sesi1', 'Ibadah Raya 1')}
-                  className={`w-full py-2 font-bold text-xs rounded-xl transition-all mt-2 cursor-pointer flex items-center justify-center gap-1 ${
-                    reminders['sesi1']
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-750'
-                      : 'bg-brand text-white hover:bg-brand-dark shadow-sm'
-                  }`}
-                >
-                  {reminders['sesi1'] ? <Check className="w-3.5 h-3.5 text-white" /> : null}
-                  {reminders['sesi1'] ? 'Sudah Diingatkan' : 'Ingatkan Saya'}
-                </button>
+            {/* Custom Interactive Schedule table/grid (Connected to Admin Panel) */}
+            {schedules.length === 0 ? (
+              <div className="p-8 text-center bg-gray-50/50 border border-gray-100 rounded-2xl">
+                <p className="text-xs text-gray-400 italic">Belum ada jadwal ibadah yang dikonfigurasi admin.</p>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {schedules.map((sch) => {
+                  const isReminded = !!reminders[sch.id];
+                  return (
+                    <div
+                      key={sch.id}
+                      className="p-5 bg-white border border-gray-200/80 rounded-2xl space-y-3 hover:border-brand transition-all shadow-sm flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 bg-brand text-white text-[9px] font-black rounded-full uppercase tracking-wider">
+                            {sch.sessionName}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-gray-400">
+                            {sch.dateDay || 'Setiap Minggu'}
+                          </span>
+                        </div>
+                        <h3 className="font-display font-bold text-gray-800 text-base">{sch.title}</h3>
+                        <p className="text-2xl font-bold font-mono text-brand">
+                          {sch.time}
+                        </p>
+                        <div className="text-xs text-gray-500 space-y-1.5 pt-3 border-t border-gray-100">
+                          {sch.speaker && <p><strong>Pembicara:</strong> {sch.speaker}</p>}
+                          {sch.worshipLeader && <p><strong>Petugas WL:</strong> {sch.worshipLeader}</p>}
+                          {sch.location && <p><strong>Lokasi:</strong> {sch.location}</p>}
+                          {sch.isOnline && (
+                            <p className="text-emerald-600 font-bold flex items-center gap-1">
+                              <span>🔴 Live Streaming Tersedia</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-              {/* Card Ibadah 2 */}
-              <div className="p-5 bg-amber-50/10 border border-amber-100/50 rounded-2xl space-y-3 hover:border-amber-400 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 bg-amber-500 text-slate-950 text-[9px] font-extrabold rounded-full uppercase">Sesi II (Siang)</span>
-                  <Clock className="w-4 h-4 text-amber-500" />
-                </div>
-                <h3 className="font-display font-bold text-gray-800 text-base">Ibadah Raya 2</h3>
-                <p className="text-2xl font-bold font-mono text-amber-600">09.30 <span className="text-xs text-gray-400">WIB</span></p>
-                <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-amber-500/15">
-                  <p><strong>Pembicara:</strong> Pdt. Dr. Samuel Wijaya</p>
-                  <p><strong>Petugas WL:</strong> Sdr. Michael Yosef</p>
-                  <p><strong>Lokasi:</strong> Main Sanctuary (Lt. 1) & Live Streaming</p>
-                </div>
-                <button
-                  onClick={() => toggleReminder('sesi2', 'Ibadah Raya 2')}
-                  className={`w-full py-2 font-bold text-xs rounded-xl transition-all mt-2 cursor-pointer flex items-center justify-center gap-1 ${
-                    reminders['sesi2']
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-750'
-                      : 'bg-amber-500 text-slate-950 hover:bg-amber-600'
-                  }`}
-                >
-                  {reminders['sesi2'] ? <Check className="w-3.5 h-3.5 text-white" /> : null}
-                  {reminders['sesi2'] ? 'Sudah Diingatkan' : 'Ingatkan Saya'}
-                </button>
+                      <button
+                        onClick={() => toggleReminder(sch.id, sch.title)}
+                        className={`w-full py-2.5 font-bold text-xs rounded-xl transition-all mt-2 cursor-pointer flex items-center justify-center gap-1 ${
+                          isReminded
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            : 'bg-brand text-white hover:bg-brand-dark shadow-sm'
+                        }`}
+                      >
+                        {isReminded ? <Check className="w-3.5 h-3.5 text-white" /> : null}
+                        {isReminded ? 'Sudah Diingatkan' : 'Ingatkan Saya'}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* Card Ibadah 3 */}
-              <div className="p-5 bg-blue-50/10 border border-blue-100/50 rounded-2xl space-y-3 hover:border-blue-400 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded-full uppercase">Sesi III (Sore)</span>
-                  <Clock className="w-4 h-4 text-blue-500" />
-                </div>
-                <h3 className="font-display font-bold text-gray-800 text-base">Ibadah Pemuda (Youth)</h3>
-                <p className="text-2xl font-bold font-mono text-blue-600">16.30 <span className="text-xs text-gray-400">WIB</span></p>
-                <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-blue-500/15">
-                  <p><strong>Pembicara:</strong> Pst. Michael Yosef</p>
-                  <p><strong>Petugas WL:</strong> Sdr. Andi Wijaya</p>
-                  <p><strong>Lokasi:</strong> Auditorium Lt. 3</p>
-                </div>
-                <button
-                  onClick={() => toggleReminder('sesi3', 'Ibadah Pemuda (Youth)')}
-                  className={`w-full py-2 font-bold text-xs rounded-xl transition-all mt-2 cursor-pointer flex items-center justify-center gap-1 ${
-                    reminders['sesi3']
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-750'
-                      : 'bg-blue-600 text-white hover:bg-blue-750'
-                  }`}
-                >
-                  {reminders['sesi3'] ? <Check className="w-3.5 h-3.5 text-white" /> : null}
-                  {reminders['sesi3'] ? 'Sudah Diingatkan' : 'Ingatkan Saya'}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Google Maps & Location Block */}

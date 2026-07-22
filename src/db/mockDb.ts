@@ -20,6 +20,7 @@ import {
   ActivityLog,
   PrayerRequest,
   ChurchSettings,
+  ServiceSchedule,
 } from '../types';
 import { findDatabaseFile, downloadDatabaseFile, uploadDatabaseFile } from '../lib/googleDriveSync';
 import { saveToFirestoreClient, loadFromFirestoreClient, subscribeFirestoreRealtime } from '../lib/firebaseClient';
@@ -252,6 +253,57 @@ const DEFAULT_EVENTS: ChurchEvent[] = [
     registeredCount: 182,
     status: 'upcoming',
     isRegistrationOpen: true,
+  },
+];
+
+const DEFAULT_SCHEDULES: ServiceSchedule[] = [
+  {
+    id: 'sch_1',
+    sessionName: 'Sesi I (Pagi)',
+    title: 'Ibadah Raya 1',
+    time: '07.00 WIB',
+    speaker: 'Pdt. Dr. Samuel Wijaya',
+    worshipLeader: 'Sdr. David Haryono',
+    location: 'Main Sanctuary (Lt. 1)',
+    category: 'Ibadah Raya',
+    dateDay: 'Setiap Hari Minggu',
+    isOnline: false,
+  },
+  {
+    id: 'sch_2',
+    sessionName: 'Sesi II (Siang)',
+    title: 'Ibadah Raya 2',
+    time: '09.30 WIB',
+    speaker: 'Pdt. Dr. Samuel Wijaya',
+    worshipLeader: 'Sdr. Michael Yosef',
+    location: 'Main Sanctuary (Lt. 1) & Live Streaming',
+    category: 'Ibadah Raya',
+    dateDay: 'Setiap Hari Minggu',
+    isOnline: true,
+  },
+  {
+    id: 'sch_3',
+    sessionName: 'Sesi III (Sore)',
+    title: 'Ibadah Pemuda (Youth)',
+    time: '16.30 WIB',
+    speaker: 'Pst. Michael Yosef',
+    worshipLeader: 'Sdr. Andi Wijaya',
+    location: 'Auditorium Lt. 3',
+    category: 'Pemuda',
+    dateDay: 'Setiap Hari Minggu',
+    isOnline: false,
+  },
+  {
+    id: 'sch_4',
+    sessionName: 'Doa Malam',
+    title: 'Persekutuan Doa Syafaat',
+    time: '19.00 WIB',
+    speaker: 'Pnt. Budi Santoso',
+    worshipLeader: 'Sdri. Clara Shinta',
+    location: 'Ruang Doa Lt. 2 & Zoom',
+    category: 'Persekutuan',
+    dateDay: 'Setiap Hari Rabu',
+    isOnline: true,
   },
 ];
 
@@ -1226,6 +1278,39 @@ export class MockDatabase {
 
     this.setStored('events', items.filter((i) => i.id !== id));
     this.addLog(actor, 'DELETE_EVENT', JSON.stringify(before), undefined);
+  }
+
+  static getSchedules(): ServiceSchedule[] {
+    return this.getStored('service_schedules', DEFAULT_SCHEDULES);
+  }
+
+  static saveSchedule(sch: ServiceSchedule, actor: { id: string; name: string; role: Role }) {
+    const items = this.getSchedules();
+    const index = items.findIndex((i) => i.id === sch.id);
+    const before = index >= 0 ? items[index] : null;
+
+    if (index >= 0) {
+      items[index] = sch;
+    } else {
+      items.push(sch);
+    }
+    this.setStored('service_schedules', items);
+
+    this.addLog(
+      actor,
+      index >= 0 ? 'UPDATE_SCHEDULE' : 'CREATE_SCHEDULE',
+      before ? JSON.stringify(before) : undefined,
+      JSON.stringify(sch)
+    );
+  }
+
+  static deleteSchedule(id: string, actor: { id: string; name: string; role: Role }) {
+    const items = this.getSchedules();
+    const before = items.find((i) => i.id === id);
+    if (!before) return;
+
+    this.setStored('service_schedules', items.filter((i) => i.id !== id));
+    this.addLog(actor, 'DELETE_SCHEDULE', JSON.stringify(before), undefined);
   }
 
   static getEventRegistrations(): EventRegistration[] {

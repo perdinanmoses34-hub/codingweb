@@ -49,6 +49,7 @@ import {
   ChurchSettings,
   Role,
   User,
+  ServiceSchedule,
 } from '../types';
 import {
   initGoogleDriveAuth,
@@ -129,6 +130,7 @@ export default function AdminModules({
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [gallery, setGallery] = useState<Gallery[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [schedules, setSchedules] = useState<ServiceSchedule[]>([]);
 
   // Editing forms state
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -221,6 +223,7 @@ export default function AdminModules({
     setOrgs(MockDatabase.getOrganizations());
     setGallery(MockDatabase.getGallery());
     setUsers(MockDatabase.getUsers());
+    setSchedules(MockDatabase.getSchedules());
 
     if (selectedEventIdForRegistrants) {
       const regs = MockDatabase.getEventRegistrations();
@@ -292,6 +295,23 @@ export default function AdminModules({
   const handleDeleteEvent = (id: string) => {
     if (confirm('Yakin ingin menghapus event ini?')) {
       MockDatabase.deleteEvent(id, currentUser);
+      loadAllData();
+    }
+  };
+
+  // SCHEDULE ACTIONS
+  const handleSaveSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    const item: ServiceSchedule = editingItem;
+    MockDatabase.saveSchedule(item, currentUser);
+    setIsCreatingNew(false);
+    setEditingItem(null);
+    loadAllData();
+  };
+
+  const handleDeleteSchedule = (id: string) => {
+    if (confirm('Yakin ingin menghapus jadwal ibadah ini?')) {
+      MockDatabase.deleteSchedule(id, currentUser);
       loadAllData();
     }
   };
@@ -859,6 +879,7 @@ export default function AdminModules({
             { id: 'admin_news', label: '📰 Kelola Berita' },
             { id: 'admin_announcements', label: '📣 Kelola Pengumuman' },
             { id: 'admin_events', label: '📅 Event & Ibadah' },
+            { id: 'admin_schedules', label: '⏰ Kelola Jadwal Ibadah' },
             { id: 'admin_devotions', label: '📖 Renungan' },
             { id: 'admin_ministries', label: '🤝 Kelola Pelayanan' },
             { id: 'admin_organizations', label: '🏢 Organisasi' },
@@ -895,7 +916,7 @@ export default function AdminModules({
         </div>
         
         {/* Dynamic add button for appropriate lists */}
-        {['admin_news', 'admin_announcements', 'admin_devotions', 'admin_events', 'admin_congregation', 'admin_users'].includes(activeTab) && !editingItem && !isCreatingNew && (
+        {['admin_news', 'admin_announcements', 'admin_devotions', 'admin_events', 'admin_schedules', 'admin_congregation', 'admin_users'].includes(activeTab) && !editingItem && !isCreatingNew && (
           <button
             onClick={() => {
               setIsCreatingNew(true);
@@ -908,13 +929,15 @@ export default function AdminModules({
                 setEditingItem({ id: `dev_${Date.now()}`, title: '', content: '', scripture: 'Yohanes 3:16', category: 'Umum', coverUrl: 'https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d?w=400', publishDate: new Date().toISOString().split('T')[0] });
               } else if (activeTab === 'admin_events') {
                 setEditingItem({ id: `evt_${Date.now()}`, title: '', content: '', bannerUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400', location: 'CMS Jakarta', dateTime: new Date().toISOString().slice(0, 16), countdownDate: new Date().toISOString(), quota: 100, registeredCount: 0, status: 'upcoming', isRegistrationOpen: true });
+              } else if (activeTab === 'admin_schedules') {
+                setEditingItem({ id: `sch_${Date.now()}`, sessionName: 'Sesi I (Pagi)', title: '', time: '07.00 WIB', speaker: '', worshipLeader: '', location: 'Main Sanctuary (Lt. 1)', category: 'Ibadah Raya', dateDay: 'Setiap Hari Minggu', isOnline: false, notes: '' });
               } else if (activeTab === 'admin_congregation') {
                 setEditingItem({ id: `cong_${Date.now()}`, name: '', photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100', address: '', phone: '', email: '', isBaptized: true, isMarried: false, familyMembers: 'Lajang', commission: 'Pemuda', ministry: 'Praise Worship', joinDate: new Date().toISOString().split('T')[0] });
               } else if (activeTab === 'admin_users') {
                 setEditingItem({ id: `usr_${Date.now()}`, email: '', name: '', role: 'JEMAAT', password: 'church123', phone: '', komisi: '', joinDate: new Date().toISOString().split('T')[0] });
               }
             }}
-            className="px-4 py-2 bg-brand text-white font-bold text-xs rounded-xl hover:bg-brand-dark transition-colors flex items-center gap-1 shadow-sm"
+            className="px-4 py-2 bg-brand text-white font-bold text-xs rounded-xl hover:bg-brand-dark transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Tambah Baru
           </button>
@@ -922,7 +945,7 @@ export default function AdminModules({
       </div>
 
       {/* FORM MODE */}
-      {editingItem && ['admin_news', 'admin_announcements', 'admin_devotions', 'admin_events', 'admin_congregation', 'admin_users'].includes(activeTab) && (
+      {editingItem && ['admin_news', 'admin_announcements', 'admin_devotions', 'admin_events', 'admin_schedules', 'admin_congregation', 'admin_users'].includes(activeTab) && (
         <div className="animate-fade-in max-w-xl mx-auto bg-gray-50/50 border border-gray-100 p-6 rounded-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <h3 className="font-display font-semibold text-gray-800 text-sm">
@@ -1058,6 +1081,123 @@ export default function AdminModules({
                 </div>
               </div>
               <button type="submit" className="w-full py-2.5 bg-brand text-white font-bold text-xs rounded-xl">Simpan Event</button>
+            </form>
+          )}
+
+          {activeTab === 'admin_schedules' && (
+            <form onSubmit={handleSaveSchedule} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Nama Sesi / Label</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingItem.sessionName || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, sessionName: e.target.value })}
+                    placeholder="Contoh: Sesi I (Pagi)"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Nama / Judul Ibadah</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingItem.title || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                    placeholder="Contoh: Ibadah Raya 1"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Waktu Pelaksanaan</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingItem.time || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, time: e.target.value })}
+                    placeholder="Contoh: 07.00 WIB"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Hari / Rutinitas</label>
+                  <input
+                    type="text"
+                    value={editingItem.dateDay || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, dateDay: e.target.value })}
+                    placeholder="Contoh: Setiap Hari Minggu"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Pembicara / Pengkhotbah</label>
+                  <input
+                    type="text"
+                    value={editingItem.speaker || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, speaker: e.target.value })}
+                    placeholder="Contoh: Pdt. Dr. Samuel Wijaya"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Petugas WL</label>
+                  <input
+                    type="text"
+                    value={editingItem.worshipLeader || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, worshipLeader: e.target.value })}
+                    placeholder="Contoh: Sdr. David Haryono"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600">Lokasi / Ruangan</label>
+                <input
+                  type="text"
+                  value={editingItem.location || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, location: e.target.value })}
+                  placeholder="Contoh: Main Sanctuary (Lt. 1)"
+                  className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600">Kategori</label>
+                  <select
+                    value={editingItem.category || 'Ibadah Raya'}
+                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs"
+                  >
+                    <option value="Ibadah Raya">Ibadah Raya</option>
+                    <option value="Pemuda">Pemuda (Youth)</option>
+                    <option value="Sekolah Minggu">Sekolah Minggu</option>
+                    <option value="Persekutuan">Persekutuan / Doa</option>
+                    <option value="Khusus">Ibadah Khusus</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 pt-5">
+                  <input
+                    type="checkbox"
+                    id="isOnlineCheckAdmin"
+                    checked={!!editingItem.isOnline}
+                    onChange={(e) => setEditingItem({ ...editingItem, isOnline: e.target.checked })}
+                    className="w-4 h-4 rounded text-brand border-gray-300"
+                  />
+                  <label htmlFor="isOnlineCheckAdmin" className="text-xs font-semibold text-gray-700">Live Streaming Online</label>
+                </div>
+              </div>
+
+              <button type="submit" className="w-full py-2.5 bg-brand text-white font-bold text-xs rounded-xl shadow-md cursor-pointer">Simpan Jadwal Ibadah</button>
             </form>
           )}
 
@@ -1293,6 +1433,88 @@ export default function AdminModules({
                       ))
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Kelola Jadwal Ibadah */}
+          {activeTab === 'admin_schedules' && !editingItem && (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50/20 border border-amber-200/50 rounded-2xl flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-amber-900 uppercase">Jadwal Ibadah Terhubung</h4>
+                  <p className="text-[11px] text-amber-700">Perubahan jadwal di sini akan langsung diperbarui pada Dashboard Jemaat.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsCreatingNew(true);
+                    setEditingItem({
+                      id: `sch_${Date.now()}`,
+                      sessionName: 'Sesi Baru',
+                      title: 'Ibadah Raya',
+                      time: '07.00 WIB',
+                      speaker: 'Pdt. Dr. Samuel Wijaya',
+                      worshipLeader: 'Sdr. David Haryono',
+                      location: 'Main Sanctuary (Lt. 1)',
+                      category: 'Ibadah Raya',
+                      dateDay: 'Setiap Hari Minggu',
+                      isOnline: false,
+                      notes: ''
+                    });
+                  }}
+                  className="px-3.5 py-2 bg-brand text-white text-xs font-bold rounded-xl flex items-center gap-1 hover:bg-brand-dark transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Tambah Jadwal
+                </button>
+              </div>
+
+              {schedules.length === 0 ? (
+                <div className="p-8 text-center bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-xs text-gray-400">Belum ada jadwal ibadah. Klik "Tambah Jadwal" untuk membuat baru.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {schedules.map((sch) => (
+                    <div key={sch.id} className="p-4 bg-white border border-gray-200 rounded-2xl space-y-3 shadow-sm hover:border-brand transition-all flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 bg-brand/10 text-brand text-[10px] font-bold rounded-md uppercase">
+                            {sch.sessionName}
+                          </span>
+                          <span className="text-[10px] font-mono text-gray-400">
+                            {sch.dateDay || 'Minggu'}
+                          </span>
+                        </div>
+                        <h3 className="font-display font-bold text-gray-800 text-sm">{sch.title}</h3>
+                        <p className="text-xl font-bold font-mono text-brand">{sch.time}</p>
+                        <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-gray-100">
+                          {sch.speaker && <p><strong>Pengkhotbah:</strong> {sch.speaker}</p>}
+                          {sch.worshipLeader && <p><strong>WL:</strong> {sch.worshipLeader}</p>}
+                          {sch.location && <p><strong>Lokasi:</strong> {sch.location}</p>}
+                          {sch.isOnline && <p className="text-emerald-600 font-bold">✔ Live Streaming</p>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                        <button
+                          onClick={() => {
+                            setIsCreatingNew(false);
+                            setEditingItem(sch);
+                          }}
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 font-bold text-xs rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSchedule(sch.id)}
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-700 text-gray-600 font-bold text-xs rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
