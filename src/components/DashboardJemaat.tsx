@@ -37,6 +37,7 @@ import {
   Megaphone,
   X,
   Info,
+  Trash2,
 } from 'lucide-react';
 import { MockDatabase } from '../db/mockDb';
 import {
@@ -142,6 +143,7 @@ export default function DashboardJemaat({
   const [congregations, setCongregations] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<ChurchNotificationType[]>([]);
   const [activePopupNotif, setActivePopupNotif] = useState<ChurchNotificationType | null>(null);
+  const [showNotifModal, setShowNotifModal] = useState(false);
 
   // Beautiful Custom Toast system (replaces blocked alert dialogs inside the preview iframe)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -518,40 +520,56 @@ export default function DashboardJemaat({
   return (
     <div className="space-y-6">
       {/* Dynamic Sub-tab navigation header (iOS Segmented Control Style) */}
-      <div className="flex overflow-x-auto gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm no-scrollbar">
-        {[
-          { id: 'beranda', label: 'Beranda', icon: Church },
-          { id: 'jadwal', label: 'Jadwal Ibadah', icon: Calendar },
-          { id: 'renungan', label: 'Renungan', icon: BookOpen },
-          { id: 'event', label: 'Event Gereja', icon: Award },
-          { id: 'donasi', label: 'Kas/Donasi', icon: Coins },
-          { id: 'pelayanan', label: 'Pelayanan', icon: Heart },
-          { id: 'pengurus', label: 'Pengurus', icon: Users },
-          { id: 'galeri', label: 'Galeri', icon: ImageIcon },
-          { id: 'profile', label: 'Profil Saya', icon: User },
-        ].map((subTab) => {
-          const Icon = subTab.icon;
-          const isActive = activeTab === subTab.id;
-          return (
-            <button
-              key={subTab.id}
-              onClick={() => {
-                const subSec = mapTabToSubSection(subTab.id);
-                setTab(`jemaat_${subSec}`);
-                setActiveTab(subTab.id);
-                setSearchQuery('');
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-smooth ${
-                isActive
-                  ? 'bg-brand text-white shadow-sm shadow-teal-500/10'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {subTab.label}
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+        <div className="flex overflow-x-auto gap-2 no-scrollbar flex-1">
+          {[
+            { id: 'beranda', label: 'Beranda', icon: Church },
+            { id: 'jadwal', label: 'Jadwal Ibadah', icon: Calendar },
+            { id: 'renungan', label: 'Renungan', icon: BookOpen },
+            { id: 'event', label: 'Event Gereja', icon: Award },
+            { id: 'donasi', label: 'Kas/Donasi', icon: Coins },
+            { id: 'pelayanan', label: 'Pelayanan', icon: Heart },
+            { id: 'pengurus', label: 'Pengurus', icon: Users },
+            { id: 'galeri', label: 'Galeri', icon: ImageIcon },
+            { id: 'profile', label: 'Profil Saya', icon: User },
+          ].map((subTab) => {
+            const Icon = subTab.icon;
+            const isActive = activeTab === subTab.id;
+            return (
+              <button
+                key={subTab.id}
+                onClick={() => {
+                  const subSec = mapTabToSubSection(subTab.id);
+                  setTab(`jemaat_${subSec}`);
+                  setActiveTab(subTab.id);
+                  setSearchQuery('');
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-smooth cursor-pointer ${
+                  isActive
+                    ? 'bg-brand text-white shadow-sm shadow-teal-500/10'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {subTab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Notification Bell Button */}
+        <button
+          onClick={() => setShowNotifModal(true)}
+          title="Lihat Pemberitahuan & Notifikasi"
+          className="relative p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0 cursor-pointer border border-gray-200 flex items-center justify-center"
+        >
+          <Bell className="w-4 h-4 text-brand" />
+          {notifications.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+              {notifications.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* RENDER ACTIVE TAB */}
@@ -2291,6 +2309,100 @@ export default function DashboardJemaat({
                     Tutup
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Notification History & Dismiss Modal */}
+        {showNotifModal && (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-lg w-full p-6 flex flex-col border border-gray-100 space-y-4 max-h-[85vh]"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-brand" />
+                  <div>
+                    <h3 className="font-display font-bold text-gray-900 text-sm">
+                      Pemberitahuan & Notifikasi ({notifications.length})
+                    </h3>
+                    <p className="text-[10px] text-gray-400">Notifikasi resmi dan kabar terkini untuk jemaat</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowNotifModal(false)}
+                  className="text-gray-400 hover:text-gray-650 p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 overflow-y-auto max-h-[50vh] pr-1">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-10 space-y-2">
+                    <Bell className="w-8 h-8 text-gray-300 mx-auto" />
+                    <p className="text-xs text-gray-400 font-medium">Tidak ada notifikasi atau pemberitahuan aktif saat ini.</p>
+                  </div>
+                ) : (
+                  notifications.map((item) => (
+                    <div key={item.id} className="p-4 bg-gray-50 border border-gray-150 rounded-2xl space-y-2 relative group hover:border-teal-200 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] bg-teal-50 text-brand px-2 py-0.5 rounded font-extrabold uppercase border border-teal-100">
+                            {item.targetGroup === 'all' ? 'Semua Jemaat' : item.targetGroup}
+                          </span>
+                          <h4 className="font-bold text-gray-900 text-xs mt-1.5">{item.title}</h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            MockDatabase.deleteNotification(item.id, currentUser);
+                            loadAllData();
+                            showToast('Notifikasi berhasil dihapus.', 'info');
+                          }}
+                          title="Hapus Notifikasi Ini"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-gray-600 leading-relaxed font-sans">{item.content}</p>
+
+                      <div className="text-[10px] text-gray-400 font-mono pt-1 border-t border-gray-100 flex justify-between items-center">
+                        <span>{new Date(item.sentDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        <span>{new Date(item.sentDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                {notifications.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (confirm('Bersihkan seluruh notifikasi di dashboard Anda?')) {
+                        MockDatabase.clearAllNotifications(currentUser);
+                        loadAllData();
+                        showToast('Seluruh notifikasi telah dibersihkan.', 'info');
+                      }
+                    }}
+                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-red-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Bersihkan Semua
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowNotifModal(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer ml-auto"
+                >
+                  Tutup
+                </button>
               </div>
             </motion.div>
           </div>

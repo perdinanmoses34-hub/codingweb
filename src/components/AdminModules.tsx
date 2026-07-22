@@ -1506,18 +1506,56 @@ export default function AdminModules({
 
               {/* Log/Notifikasi Terkirim */}
               <div className="space-y-3">
-                <h4 className="font-display font-bold text-gray-800 text-xs uppercase tracking-wide">Riwayat Notifikasi Terkirim</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-display font-bold text-gray-800 text-xs uppercase tracking-wide">
+                    Riwayat Notifikasi Terkirim ({notifs.length})
+                  </h4>
+                  {notifs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat notifikasi terkirim? Notifikasi tidak akan lagi muncul di dashboard jemaat.')) {
+                          MockDatabase.clearAllNotifications(currentUser);
+                          loadAllData();
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" /> Hapus Semua
+                    </button>
+                  )}
+                </div>
+
                 <div className="space-y-2 overflow-y-auto max-h-96 pr-1">
-                  {notifs.map((item) => (
-                    <div key={item.id} className="p-3.5 bg-white border border-gray-100 rounded-2xl space-y-1 hover:border-teal-100 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-gray-400">{new Date(item.sentDate).toLocaleDateString('id-ID')}</span>
-                        <span className="text-[8px] bg-teal-50 text-brand px-1.5 py-0.25 rounded font-extrabold uppercase">Target: {item.targetGroup}</span>
+                  {notifs.length === 0 ? (
+                    <p className="text-center py-6 text-gray-400 text-xs">Belum ada riwayat notifikasi terkirim.</p>
+                  ) : (
+                    notifs.map((item) => (
+                      <div key={item.id} className="p-3.5 bg-white border border-gray-100 rounded-2xl space-y-1 hover:border-teal-100 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-gray-400">{new Date(item.sentDate).toLocaleDateString('id-ID')}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[8px] bg-teal-50 text-brand px-1.5 py-0.25 rounded font-extrabold uppercase">Target: {item.targetGroup}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Hapus notifikasi "${item.title}"? Notifikasi ini akan dihapus dari seluruh dashboard jemaat.`)) {
+                                  MockDatabase.deleteNotification(item.id, currentUser);
+                                  loadAllData();
+                                }
+                              }}
+                              title="Hapus Notifikasi Ini"
+                              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <h4 className="font-semibold text-gray-800 text-xs leading-snug">{item.title}</h4>
+                        <p className="text-[11px] text-gray-500">{item.content}</p>
                       </div>
-                      <h4 className="font-semibold text-gray-800 text-xs leading-snug">{item.title}</h4>
-                      <p className="text-[11px] text-gray-500">{item.content}</p>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

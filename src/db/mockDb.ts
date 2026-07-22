@@ -1482,6 +1482,20 @@ export class MockDatabase {
     }
   }
 
+  static deleteNotification(id: string, actor: { id: string; name: string; role: Role }) {
+    const items = this.getNotifications();
+    const before = items.find((i) => i.id === id);
+    if (!before) return;
+
+    this.setStored('notifications', items.filter((i) => i.id !== id));
+    this.addLog(actor, 'DELETE_NOTIFICATION', JSON.stringify(before), undefined);
+  }
+
+  static clearAllNotifications(actor: { id: string; name: string; role: Role }) {
+    this.setStored('notifications', []);
+    this.addLog(actor, 'CLEAR_ALL_NOTIFICATIONS', undefined, 'All notifications deleted');
+  }
+
   static getPrayerRequests(): PrayerRequest[] {
     return this.getStored('prayer_requests', DEFAULT_PRAYER_REQUESTS);
   }
