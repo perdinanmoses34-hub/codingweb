@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((response) => {
         // Cache successful responses
-        if (response.status === 200) {
+        if (response.status === 200 && response.type === 'basic') {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
@@ -57,17 +57,17 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
+      .catch(async () => {
         // Offline fallback
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // If index.html is in cache, return it for navigations
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html') || caches.match('./');
-          }
-        });
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        if (event.request.mode === 'navigate') {
+          const indexResponse = (await caches.match('./index.html')) || (await caches.match('./'));
+          if (indexResponse) return indexResponse;
+        }
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
       })
   );
 });
