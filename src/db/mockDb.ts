@@ -212,6 +212,20 @@ const DEFAULT_DEVOTIONS: Devotion[] = [
 
 const DEFAULT_EVENTS: ChurchEvent[] = [
   {
+    id: 'cool_youth_fellowship_id',
+    title: 'COOL YOUTH FELLOWSHIP',
+    content: 'Persekutuan ibadah pemuda dan remaja gereja. Wadah kumpul anak muda untuk bertumbuh, saling menguatkan, dan membangun persahabatan sejati di dalam Kristus.',
+    bannerUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80',
+    location: 'Chapel / Gedung Utama CMS',
+    googleMapsUrl: 'https://maps.google.com',
+    dateTime: '2026-07-22T19:00',
+    countdownDate: '2026-07-22T19:00:00',
+    quota: 40,
+    registeredCount: 25,
+    status: 'upcoming',
+    isRegistrationOpen: true,
+  },
+  {
     id: 'evt_1',
     title: 'Seminar Hubungan Keluarga & Pasangan Bahagia 2026',
     content: 'Membangun keluarga Kristen yang harmonis, tangguh, dan berlandaskan kasih Kristus di tengah gempuran tren modern. Seminar ini menghadirkan pembicara pakar konseling keluarga kristen, Dr. Irwan Handoko & Dra. Maria Handoko. Sesi interaktif meliputi komunikasi suami-istri, mendidik anak di era digital, dan penyelesaian konflik keluarga dengan bijaksana.',
@@ -1174,7 +1188,15 @@ export class MockDatabase {
   }
 
   static getEvents(): ChurchEvent[] {
-    return this.getStored('events', DEFAULT_EVENTS);
+    const events = this.getStored('events', DEFAULT_EVENTS);
+    if (!events.some((e) => e.id === 'cool_youth_fellowship_id')) {
+      const coolYouth = DEFAULT_EVENTS.find((e) => e.id === 'cool_youth_fellowship_id');
+      if (coolYouth) {
+        events.unshift(coolYouth);
+        this.setStored('events', events);
+      }
+    }
+    return events;
   }
 
   static saveEvent(evt: ChurchEvent, actor: { id: string; name: string; role: Role }) {

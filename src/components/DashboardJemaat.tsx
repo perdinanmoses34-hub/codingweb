@@ -753,51 +753,141 @@ export default function DashboardJemaat({
             </div>
 
             {/* Right Panel: Upcoming Event Card (Yellow, Cool Youth Fellowship, RSVP button) */}
-            <div className="bg-[#FACC15] text-[#0F172A] p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[350px] shadow-2xl border border-yellow-500/20">
-              <div className="absolute top-[-10%] right-[-10%] w-36 h-36 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+            {(() => {
+              const coolYouthEvent = events.find((e) => e.id === 'cool_youth_fellowship_id') || events.find((e) => e.status === 'upcoming') || events[0];
+              const eventTitle = coolYouthEvent ? coolYouthEvent.title : 'COOL YOUTH FELLOWSHIP';
+              const eventLocation = coolYouthEvent ? coolYouthEvent.location : `Chapel / Gedung Utama - ${settings.churchName || 'SYSTEM MANAGEMENT CHURCH (CMS)'}`;
               
-              <div>
-                <span className="bg-black/10 text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit">
-                  Upcoming Event
-                </span>
-                
-                <h3 className="text-2xl font-black uppercase tracking-tight mt-6 leading-tight">
-                  COOL YOUTH FELLOWSHIP
-                </h3>
-                <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#0F172A]" />
-                  Chapel / Gedung Utama - {settings.churchName || 'SYSTEM MANAGEMENT CHURCH (CMS)'}
-                </p>
-                
-                {/* Custom Info Box */}
-                <div className="mt-6 border-t border-black/10 pt-4 space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-extrabold uppercase text-slate-800">Tanggal</span>
-                    <span className="font-mono font-bold">22 Juli 2026</span>
+              let eventDateStr = '22 Juli 2026';
+              let eventTimeStr = '19:00 WIB';
+              if (coolYouthEvent && coolYouthEvent.dateTime) {
+                try {
+                  const d = new Date(coolYouthEvent.dateTime);
+                  if (!isNaN(d.getTime())) {
+                    eventDateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    eventTimeStr = `${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
+                  }
+                } catch {
+                  // Fallback
+                }
+              }
+              const registeredCount = coolYouthEvent ? coolYouthEvent.registeredCount : 25;
+              const maxQuota = coolYouthEvent ? coolYouthEvent.quota : 40;
+
+              return (
+                <div className="bg-[#FACC15] text-[#0F172A] p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[350px] shadow-2xl border border-yellow-500/20">
+                  <div className="absolute top-[-10%] right-[-10%] w-36 h-36 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+                  
+                  <div>
+                    <span className="bg-black/10 text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit">
+                      Upcoming Event
+                    </span>
+                    
+                    <h3 className="text-2xl font-black uppercase tracking-tight mt-6 leading-tight">
+                      {eventTitle}
+                    </h3>
+                    <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#0F172A]" />
+                      {eventLocation}
+                    </p>
+                    
+                    {/* Custom Info Box */}
+                    <div className="mt-6 border-t border-black/10 pt-4 space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-extrabold uppercase text-slate-800">Tanggal</span>
+                        <span className="font-mono font-bold">{eventDateStr}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="font-extrabold uppercase text-slate-800">Waktu</span>
+                        <span className="font-mono font-bold">{eventTimeStr}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="font-extrabold uppercase text-slate-800">Kuota RSVP</span>
+                        <span className="font-mono font-bold">{coolYouthRsvped ? registeredCount + 1 : registeredCount} / {maxQuota} Terisi</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-extrabold uppercase text-slate-800">Waktu</span>
-                    <span className="font-mono font-bold">19:00 WIB</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-extrabold uppercase text-slate-800">Kuota RSVP</span>
-                    <span className="font-mono font-bold">{coolYouthRsvped ? 26 : 25} / 40 Terisi</span>
-                  </div>
+
+                  <button
+                    onClick={handleCoolYouthRsvp}
+                    className={`mt-6 font-extrabold text-xs uppercase tracking-widest py-3 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg w-full cursor-pointer ${
+                      coolYouthRsvped
+                        ? 'bg-emerald-600 hover:bg-emerald-750 text-white'
+                        : 'bg-[#1E293B] hover:bg-[#0F172A] text-white'
+                    }`}
+                  >
+                    <span>{coolYouthRsvped ? 'Sudah RSVP (Batal)' : 'Daftar RSVP'}</span>
+                    {coolYouthRsvped ? <Check className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* BERITA GEREJA & PORTAL INFORMASI TERBARU (Kelola News Integration) */}
+          <div className="bg-[#0F172A]/90 border border-slate-800/80 p-6 rounded-3xl space-y-5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-sm uppercase tracking-wider text-white">
+                    Informasi Berita & Warta Kabar
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Kabar sukacita, artikel, dan warta kegiatan terkini dari media gereja
+                  </p>
                 </div>
               </div>
-
-              <button
-                onClick={handleCoolYouthRsvp}
-                className={`mt-6 font-extrabold text-xs uppercase tracking-widest py-3 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg w-full cursor-pointer ${
-                  coolYouthRsvped
-                    ? 'bg-emerald-600 hover:bg-emerald-750 text-white'
-                    : 'bg-[#1E293B] hover:bg-[#0F172A] text-white'
-                }`}
-              >
-                <span>{coolYouthRsvped ? 'Sudah RSVP (Batal)' : 'Daftar RSVP'}</span>
-                {coolYouthRsvped ? <Check className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              </button>
             </div>
+
+            {news.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">Belum ada berita yang dipublikasikan.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {news.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between hover:border-indigo-500/40 transition-all group"
+                  >
+                    <div className="relative aspect-video overflow-hidden bg-slate-950">
+                      <img
+                        src={item.coverUrl || 'https://images.unsplash.com/photo-1548625361-155de0cbb10a?w=600&auto=format&fit=crop&q=80'}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span className="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-md text-indigo-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase">
+                        {item.category}
+                      </span>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <span>{item.author || 'Admin'}</span>
+                          <span>{item.publishDate}</span>
+                        </div>
+                        <h4 className="font-bold text-white text-sm line-clamp-2 leading-snug group-hover:text-indigo-300 transition-colors">
+                          {item.title}
+                        </h4>
+                        <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                          {item.content}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedNews(item)}
+                        className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-indigo-500/30 text-center"
+                      >
+                        Baca Selengkapnya
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2114,6 +2204,93 @@ export default function DashboardJemaat({
                 >
                   Selesai Membaca
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* News Detail Modal */}
+        {selectedNews && (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-xl w-full flex flex-col border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="relative aspect-video bg-gray-100">
+                <img src={selectedNews.coverUrl} alt={selectedNews.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <button
+                  onClick={() => setSelectedNews(null)}
+                  className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase border border-indigo-100">
+                    {selectedNews.category}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-mono">
+                    Penulis: {selectedNews.author || 'Admin'} • {selectedNews.publishDate}
+                  </span>
+                </div>
+
+                <h3 className="font-display font-black text-gray-900 text-lg leading-snug">
+                  {selectedNews.title}
+                </h3>
+
+                <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap pt-2 border-t border-gray-100">
+                  {selectedNews.content}
+                </div>
+
+                {/* Comment Section */}
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  <h4 className="font-display font-bold text-gray-800 text-xs">
+                    Komentar & Respon Jemaat ({comments.filter((c) => c.targetId === selectedNews.id && c.status === 'approved').length})
+                  </h4>
+
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {comments
+                      .filter((c) => c.targetId === selectedNews.id && c.status === 'approved')
+                      .map((cmt) => (
+                        <div key={cmt.id} className="p-3 bg-gray-50 rounded-xl space-y-1">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <strong className="text-gray-800 font-semibold">{cmt.userName}</strong>
+                            <span className="text-gray-400">{new Date(cmt.date).toLocaleDateString('id-ID')}</span>
+                          </div>
+                          <p className="text-xs text-gray-600">{cmt.content}</p>
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Tulis tanggapan atau komentar..."
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      className="flex-1 p-2 text-xs rounded-xl border border-gray-200 focus:border-brand"
+                    />
+                    <button
+                      onClick={() => handleAddComment(selectedNews.id, 'news', selectedNews.title)}
+                      className="p-2 bg-brand text-white rounded-xl hover:bg-brand-dark cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedNews(null)}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
