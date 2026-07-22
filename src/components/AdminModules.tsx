@@ -303,7 +303,22 @@ export default function AdminModules({
   // SCHEDULE ACTIONS
   const handleSaveSchedule = (e: React.FormEvent) => {
     e.preventDefault();
-    const item: ServiceSchedule = editingItem;
+    if (!editingItem) return;
+    
+    const item: ServiceSchedule = {
+      id: editingItem.id || `sch_${Date.now()}`,
+      sessionName: editingItem.sessionName || 'Sesi Baru',
+      title: editingItem.title || 'Ibadah Raya',
+      time: editingItem.time || '07.00 WIB',
+      speaker: editingItem.speaker || '',
+      worshipLeader: editingItem.worshipLeader || '',
+      location: editingItem.location || 'Main Sanctuary (Lt. 1)',
+      category: editingItem.category || 'Ibadah Raya',
+      dateDay: editingItem.dateDay || 'Setiap Hari Minggu',
+      isOnline: !!editingItem.isOnline,
+      notes: editingItem.notes || ''
+    };
+    
     MockDatabase.saveSchedule(item, currentUser);
     setIsCreatingNew(false);
     setEditingItem(null);
@@ -1503,6 +1518,7 @@ export default function AdminModules({
                       isOnline: false,
                       notes: ''
                     });
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="px-3.5 py-2 bg-brand text-white text-xs font-bold rounded-xl flex items-center gap-1 hover:bg-brand-dark transition-colors cursor-pointer"
                 >
@@ -1542,6 +1558,7 @@ export default function AdminModules({
                           onClick={() => {
                             setIsCreatingNew(false);
                             setEditingItem(sch);
+                            if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                           className="px-3 py-1.5 bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 font-bold text-xs rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                         >

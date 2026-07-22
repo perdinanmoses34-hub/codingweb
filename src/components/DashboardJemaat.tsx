@@ -698,21 +698,37 @@ export default function DashboardJemaat({
                 {notifications.slice(0, 4).map((notif) => (
                   <div
                     key={notif.id}
-                    className="bg-slate-950/80 border border-slate-800/90 hover:border-amber-500/50 p-4 rounded-2xl space-y-2 transition-all shadow-md group"
+                    className="bg-slate-950/80 border border-slate-800/90 hover:border-amber-500/50 p-4 rounded-2xl space-y-2 transition-all shadow-md group relative"
                   >
                     <div className="flex items-center justify-between">
                       <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase tracking-wide">
                         {notif.targetGroup === 'all' ? 'Semua Jemaat' : 'Khusus Jemaat'}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {new Date(notif.sentDate).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(notif.sentDate).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        <button
+                          onClick={() => {
+                            MockDatabase.deleteNotification(notif.id, currentUser);
+                            if (activePopupNotif?.id === notif.id) {
+                              setActivePopupNotif(null);
+                            }
+                            loadAllData();
+                            showToast('✓ Notifikasi berhasil dihapus.', 'info');
+                          }}
+                          title="Hapus Notifikasi Ini"
+                          className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h4 className="font-extrabold text-white text-sm group-hover:text-amber-300 transition-colors">
@@ -2339,8 +2355,11 @@ export default function DashboardJemaat({
                           type="button"
                           onClick={() => {
                             MockDatabase.deleteNotification(item.id, currentUser);
+                            if (activePopupNotif?.id === item.id) {
+                              setActivePopupNotif(null);
+                            }
                             loadAllData();
-                            showToast('Notifikasi berhasil dihapus.', 'info');
+                            showToast('✓ Notifikasi berhasil dihapus.', 'info');
                           }}
                           title="Hapus Notifikasi Ini"
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"

@@ -622,7 +622,18 @@ export class MockDatabase {
         if (json.success && json.data) {
           const dbData = json.data;
           Object.keys(dbData).forEach((key) => {
-            if (dbData[key] !== undefined) {
+            if (dbData[key] !== undefined && dbData[key] !== null) {
+              if (Array.isArray(dbData[key]) && dbData[key].length === 0) {
+                const local = localStorage.getItem(`church_cms_${key}`);
+                if (local) {
+                  try {
+                    const parsedLocal = JSON.parse(local);
+                    if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+                      return; // preserve local non-empty data if server returns empty
+                    }
+                  } catch (e) {}
+                }
+              }
               localStorage.setItem(`church_cms_${key}`, JSON.stringify(dbData[key]));
             }
           });
@@ -773,6 +784,7 @@ export class MockDatabase {
       "announcements",
       "devotions",
       "events",
+      "service_schedules",
       "prayer_requests",
       "gallery",
       "congregations"
@@ -784,6 +796,7 @@ export class MockDatabase {
       announcements: ["category"],
       devotions: ["scripture"],
       events: ["dateTime"],
+      service_schedules: ["title", "time"],
       prayer_requests: ["isPrivate"],
       gallery: ["imageUrl"],
       congregations: ["name", "phone"]
@@ -1283,7 +1296,12 @@ export class MockDatabase {
   }
 
   static getSchedules(): ServiceSchedule[] {
-    return this.getStored('service_schedules', DEFAULT_SCHEDULES);
+    const raw = this.getStored('service_schedules', DEFAULT_SCHEDULES);
+    if (!raw || !Array.isArray(raw) || raw.length === 0) {
+      this.setStored('service_schedules', DEFAULT_SCHEDULES);
+      return DEFAULT_SCHEDULES;
+    }
+    return raw;
   }
 
   static saveSchedule(sch: ServiceSchedule, actor: { id: string; name: string; role: Role }) {
