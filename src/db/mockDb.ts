@@ -1297,7 +1297,7 @@ export class MockDatabase {
 
   static getSchedules(): ServiceSchedule[] {
     const raw = this.getStored('service_schedules', DEFAULT_SCHEDULES);
-    if (!raw || !Array.isArray(raw) || raw.length === 0) {
+    if (!raw || !Array.isArray(raw)) {
       this.setStored('service_schedules', DEFAULT_SCHEDULES);
       return DEFAULT_SCHEDULES;
     }
