@@ -164,6 +164,7 @@ export default function AdminModules({
     "announcements",
     "devotions",
     "events",
+    "service_schedules",
     "prayer_requests",
     "gallery"
   ]);

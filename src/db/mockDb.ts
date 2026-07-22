@@ -673,6 +673,7 @@ export class MockDatabase {
           news: this.getNews(),
           devotions: this.getDevotions(),
           events: this.getEvents(),
+          service_schedules: this.getSchedules(),
           event_registrations: this.getEventRegistrations(),
           gallery: this.getGallery(),
           organizations: this.getOrganizations(),
@@ -1021,6 +1022,7 @@ export class MockDatabase {
           news: this.getNews(),
           devotions: this.getDevotions(),
           events: this.getEvents(),
+          service_schedules: this.getSchedules(),
           event_registrations: this.getEventRegistrations(),
           gallery: this.getGallery(),
           organizations: this.getOrganizations(),
@@ -1666,6 +1668,7 @@ export class MockDatabase {
       if (parsed.news) this.setStored('news', parsed.news);
       if (parsed.devotions) this.setStored('devotions', parsed.devotions);
       if (parsed.events) this.setStored('events', parsed.events);
+      if (parsed.service_schedules) this.setStored('service_schedules', parsed.service_schedules);
       if (parsed.event_registrations) this.setStored('event_registrations', parsed.event_registrations);
       if (parsed.gallery) this.setStored('gallery', parsed.gallery);
       if (parsed.organizations) this.setStored('organizations', parsed.organizations);
@@ -1691,6 +1694,7 @@ export class MockDatabase {
       news: this.getNews(),
       devotions: this.getDevotions(),
       events: this.getEvents(),
+      service_schedules: this.getSchedules(),
       event_registrations: this.getEventRegistrations(),
       gallery: this.getGallery(),
       organizations: this.getOrganizations(),
