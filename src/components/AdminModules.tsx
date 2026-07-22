@@ -596,6 +596,7 @@ export default function AdminModules({
       { id: 'admin_announcements', label: 'Kelola Pengumuman', visible: true },
       { id: 'admin_devotions', label: 'Kelola Renungan', visible: true },
       { id: 'admin_events', label: 'Kelola Event', visible: true },
+      { id: 'admin_schedules', label: 'Kelola Jadwal Ibadah', visible: true },
       { id: 'admin_congregation', label: 'Data Jemaat', visible: true },
       { id: 'admin_users', label: 'Kelola Akun & Sandi', visible: true },
       { id: 'admin_comments', label: 'Moderasi Komentar', visible: true },
@@ -696,6 +697,7 @@ export default function AdminModules({
         { id: 'admin_announcements', label: 'Kelola Pengumuman', visible: true },
         { id: 'admin_devotions', label: 'Kelola Renungan', visible: true },
         { id: 'admin_events', label: 'Kelola Event', visible: true },
+        { id: 'admin_schedules', label: 'Kelola Jadwal Ibadah', visible: true },
         { id: 'admin_congregation', label: 'Data Jemaat', visible: true },
         { id: 'admin_users', label: 'Kelola Akun & Sandi', visible: true },
         { id: 'admin_comments', label: 'Moderasi Komentar', visible: true },
@@ -813,13 +815,27 @@ export default function AdminModules({
   };
 
   const handleGDriveSync = async (direction: 'pull' | 'push') => {
-    const token = gdriveToken || (typeof window !== 'undefined' ? sessionStorage.getItem('gdrive_access_token') : null);
+    let token = gdriveToken || (typeof window !== 'undefined' ? sessionStorage.getItem('gdrive_access_token') : null);
+    
+    // If no token exists, prompt sign in first
     if (!token) {
       setGdriveSyncLogs(prev => [
         ...prev,
-        "✖ Token Google Drive tidak ditemukan. Silakan klik 'Hubungkan Google Drive Saya' terlebih dahulu."
+        "Token Google Drive tidak ditemukan. Membuka koneksi Google Drive..."
       ]);
-      return;
+      try {
+        const res = await signInWithGoogleDrive();
+        if (res) {
+          setGdriveUser(res.user);
+          setGdriveToken(res.accessToken);
+          token = res.accessToken;
+        } else {
+          return;
+        }
+      } catch (e: any) {
+        setGdriveSyncLogs(prev => [...prev, `✖ Gagal menghubungkan Google Drive: ${e.message || e}`]);
+        return;
+      }
     }
 
     const directionWord = direction === 'pull' ? 'MENGUNDUH (PULL)' : 'MENGUNGGAH (PUSH)';
@@ -827,13 +843,37 @@ export default function AdminModules({
     setIsSyncingGDrive(true);
     setGdriveSyncLogs(prev => [...prev, `Memulai sinkronisasi: ${directionWord}...`]);
     try {
-      const res = await MockDatabase.syncWithGoogleDrive(token, direction);
+      let res = await MockDatabase.syncWithGoogleDrive(token, direction);
+      
+      // Auto-retry if token expired or 401 error
+      if (!res.success && (res.message?.includes('kedaluwarsa') || res.message?.includes('expired') || res.message?.includes('401'))) {
+        setGdriveSyncLogs(prev => [...prev, "⚠️ Token Google Drive kedaluwarsa. Memperbarui token otomatis..."]);
+        try {
+          const authRes = await signInWithGoogleDrive();
+          if (authRes) {
+            setGdriveUser(authRes.user);
+            setGdriveToken(authRes.accessToken);
+            token = authRes.accessToken;
+            setGdriveSyncLogs(prev => [...prev, "✔ Token berhasil diperbarui! Melanjutkan sinkronisasi..."]);
+            res = await MockDatabase.syncWithGoogleDrive(token, direction);
+          }
+        } catch (reAuthErr: any) {
+          sessionStorage.removeItem('gdrive_access_token');
+          setGdriveToken(null);
+          setGdriveSyncLogs(prev => [
+            ...prev,
+            `✖ Gagal memperbarui token: ${reAuthErr.message || reAuthErr}. Silakan klik "Hubungkan Google Drive Saya" kembali.`
+          ]);
+          return;
+        }
+      }
+
       if (res.success) {
         setGdriveSyncLogs(prev => [...prev, `✔ ${res.message}`]);
         loadAllData();
         onSettingsSaved(MockDatabase.getSettings());
       } else {
-        setGdriveSyncLogs(prev => [...prev, `✖ ${res.message}`]);
+        setGdriveSyncLogs(prev => [...prev, res.message.startsWith('✖') ? res.message : `✖ ${res.message}`]);
       }
     } catch (err: any) {
       setGdriveSyncLogs(prev => [...prev, `✖ Gagal: ${err.message || err}`]);
@@ -2476,12 +2516,16 @@ export default function AdminModules({
                     <span>LOG SINKRONISASI GOOGLE DRIVE</span>
                     <button onClick={() => setGdriveSyncLogs([])} className="hover:text-white text-[8px] font-mono cursor-pointer uppercase">Clear</button>
                   </p>
-                  {gdriveSyncLogs.map((log, index) => (
-                    <p key={index} className={log.includes("Gagal") || log.includes("Error") || log.includes("✖") ? "text-red-400 font-semibold" : ""}>
-                      {log.startsWith("✔") ? "✔ " : log.includes("Gagal") || log.includes("✖") ? "✖ " : "> "}
-                      {log}
-                    </p>
-                  ))}
+                  {gdriveSyncLogs.map((log, index) => {
+                    const isError = log.includes("Gagal") || log.includes("Error") || log.includes("✖");
+                    const hasPrefix = log.startsWith("✔") || log.startsWith("✖") || log.startsWith(">") || log.startsWith("⚠️");
+                    return (
+                      <p key={index} className={isError ? "text-red-400 font-semibold" : log.startsWith("⚠️") ? "text-amber-400 font-semibold" : "text-emerald-400"}>
+                        {hasPrefix ? "" : "> "}
+                        {log}
+                      </p>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2573,6 +2617,7 @@ export default function AdminModules({
                       { id: "announcements", label: "Warta (announcements)" },
                       { id: "devotions", label: "Renungan (devotions)" },
                       { id: "events", label: "Kegiatan (events)" },
+                      { id: "service_schedules", label: "Jadwal Ibadah (service_schedules)" },
                       { id: "prayer_requests", label: "Doa (prayer_requests)" },
                       { id: "gallery", label: "Galeri (gallery)" },
                     ].map((tbl) => (
